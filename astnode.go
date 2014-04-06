@@ -59,7 +59,7 @@ func (nod *node) JSON(js []byte) []byte {
 
 func (nod *node) PushChild(c ASTNode) {
 	if nod.typ == TObject || nod.typ == TArray {
-		nod.children = append(nod.children)
+		nod.children = append(nod.children, c)
 		return
 	}
 	panic("invalid node type")

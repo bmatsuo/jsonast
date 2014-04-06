@@ -74,6 +74,7 @@ func lexNull(lex *lexer.Lexer) lexer.StateFn {
 		lex.Errorf("expected 'l'")
 		return nil
 	}
+	lex.Emit(lNull)
 	return lexStart
 }
 func lexTrue(lex *lexer.Lexer) lexer.StateFn {
@@ -93,6 +94,7 @@ func lexTrue(lex *lexer.Lexer) lexer.StateFn {
 		lex.Errorf("expected 'e'")
 		return nil
 	}
+	lex.Emit(lBoolean)
 	return lexStart
 }
 func lexFalse(lex *lexer.Lexer) lexer.StateFn {
@@ -116,28 +118,36 @@ func lexFalse(lex *lexer.Lexer) lexer.StateFn {
 		lex.Errorf("expected 'e'")
 		return nil
 	}
+	lex.Emit(lBoolean)
 	return lexStart
 }
 
+// can produce bad numbers. but there will not be any ambiguity of syntax error when that happens.
 func lexNumber(lex *lexer.Lexer) lexer.StateFn {
 	lex.Accept("-")
 	if lex.Accept("0") {
 		return lexNumberFraction
 	}
+	lex.AcceptRun("123456789")
+	/*
 	n := lex.AcceptRun("123456789")
 	if n == 0 {
 		return lex.Errorf("expected non-zero digit")
 	}
+	*/
 	return lexNumberFraction
 }
 func lexNumberFraction(lex *lexer.Lexer) lexer.StateFn {
 	if !lex.Accept(".") {
 		return lexNumberExponent
 	}
+	lex.AcceptRun("0123456789")
+	/*
 	n := lex.AcceptRun("0123456789")
 	if n == 0 {
 		return lex.Errorf("expected digit")
 	}
+	*/
 	return lexNumberExponent
 }
 func lexNumberExponent(lex *lexer.Lexer) lexer.StateFn {
@@ -146,10 +156,14 @@ func lexNumberExponent(lex *lexer.Lexer) lexer.StateFn {
 		return lexStart
 	}
 	lex.Accept("+-")
+	lex.AcceptRun("0123456789")
+	/*
 	n := lex.AcceptRun("0123456789")
 	if n == 0 {
 		return lex.Errorf("expected digit")
 	}
+	*/
+	lex.Emit(lNumber)
 	return lexStart
 }
 
@@ -159,6 +173,7 @@ func lexString(lex *lexer.Lexer) lexer.StateFn {
 	}
 	for {
 		if lex.Accept(`"`) {
+			lex.Emit(lString)
 			return lexStart
 		}
 		if lex.Accept(`\`) {
@@ -178,5 +193,5 @@ func lexString(lex *lexer.Lexer) lexer.StateFn {
 			return lex.Errorf("unexpected control character")
 		}
 	}
-	return nil
+	panic("unreachable")
 }
