@@ -2,6 +2,8 @@ package jsonast
 
 import (
 	"github.com/bmatsuo/go-lexer"
+
+	"unicode"
 )
 
 const (
@@ -171,7 +173,10 @@ func lexString(lex *lexer.Lexer) lexer.StateFn {
 				}
 			}
 		}
-		// TODO check for control character
+		c, _ := lex.Advance()
+		if unicode.IsControl(c) {
+			return lex.Errorf("unexpected control character")
+		}
 	}
 	return nil
 }

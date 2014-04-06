@@ -22,10 +22,14 @@ type ASTNode interface {
 	Type() Type
 	// p with the node's json appended to it
 	JSON(p []byte) []byte
-	// the node's children. may panic when the node's type is not TArray or TObject.
-	// if the node's type is TObject the returned slice has an even number of children,
-	// with even-indexed children of type TString.
+	// the node's children. panics when the node's type is not TArray or
+	// TObject. on a parsed node, if the node's type is TObject the returned
+	// slice has an even number of children, with even-indexed elements of type
+	// TString.
 	Children() []ASTNode
+	// add a child to the node. panics if the node's type is not TArray or
+	// TObject.
+	PushChild(ASTNode)
 	// only types in this package can implement ASTNode
 	sealASTNode()
 }
@@ -52,7 +56,20 @@ func (nod *node) JSON(js []byte) []byte {
 		return append(js, nod.raw...)
 	}
 }
-func (nod *node) Children() []ASTNode { return nod.children }
+
+func (nod *node) PushChild(c ASTNode) {
+	if nod.typ == TObject || nod.typ == TArray {
+		nod.children = append(nod.children)
+		return
+	}
+	panic("invalid node type")
+}
+func (nod *node) Children() []ASTNode {
+	if nod.typ == TObject || nod.typ == TArray {
+		return nod.children
+	}
+	panic("invalid node type")
+}
 
 func (nod *node) arrayJSON(js []byte) []byte {
 	n := len(nod.children)
