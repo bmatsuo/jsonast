@@ -17,8 +17,12 @@ func (t Type) IsValid() bool {
 	return t > TInvalid && t < tInvalid
 }
 
+func IsNull(node ASTNode) bool {
+	return node.Type() == TNull
+}
+
 type ASTNode interface {
-	// the nodes Type
+	// the node's Type
 	Type() Type
 	// p with the node's json appended to it
 	JSON(p []byte) []byte
@@ -30,6 +34,14 @@ type ASTNode interface {
 	// add a child to the node. panics if the node's type is not TArray or
 	// TObject.
 	PushChild(ASTNode)
+	// panics if Type() != TString
+	String() string
+	// panics if Type() != TNumber
+	Float64() float64
+	// panics if Type() != TNumber
+	Int64() int64
+	// panics if Type() != TBoolean
+	Bool() bool
 	// only types in this package can implement ASTNode
 	sealASTNode()
 }
@@ -43,6 +55,37 @@ type node struct {
 func (nod *node) sealASTNode() {}
 
 func (nod *node) Type() Type { return nod.typ }
+
+// panics if nod.typ is note in unless
+func (nod *node) panicType(unless ...Type) {
+	for i := range unless {
+		if nod.typ == unless[i] {
+			return
+		}
+	}
+	panic("invalid type")
+}
+
+func (nod *node) String() string {
+	nod.panicType(TString)
+	return "FIXME"
+}
+
+func (nod *node) Bool() bool {
+	nod.panicType(TBoolean)
+	return nod.raw[0] == 't'
+}
+
+func (nod *node) Int64() int64 {
+	nod.panicType(TNumber)
+	return -1
+}
+
+func (nod *node) Float64() float64 {
+	nod.panicType(TNumber)
+	return -1
+}
+
 func (nod *node) JSON(js []byte) []byte {
 	if !nod.typ.IsValid() {
 		panic("invalid node")
