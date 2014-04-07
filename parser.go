@@ -9,7 +9,7 @@ import (
 func Parse(p []byte) (roots []ASTNode, err error) {
 	state := new(parseState)
 	state.in = p
-	state.lex = lexer.New(lexStart, string(p))
+	state.lex = lexer.New(lexStart, p)
 	err = state.loop(false)
 	if err != nil {
 		return nil, err
@@ -20,7 +20,7 @@ func Parse(p []byte) (roots []ASTNode, err error) {
 func parse(p []byte, debug bool) (roots []ASTNode, err error) {
 	state := new(parseState)
 	state.in = p
-	state.lex = lexer.New(lexStart, string(p))
+	state.lex = lexer.New(lexStart, p)
 	err = state.loop(debug)
 	if err != nil {
 		return nil, err
@@ -114,6 +114,13 @@ func (state *parseState) loop(debug bool) error {
 				fmt.Printf("%v: %q\n", fmt.Sprint(v...), item.Value)
 			}
 		}
+		if debug {
+			if state.top != nil {
+				fmt.Printf("top: %d children: %d\n", state.top.Type(), len(state.top.Children()))
+			} else {
+				fmt.Println("empty stack")
+			}
+		}
 		switch item.Type {
 		case lexer.ItemEOF:
 			itemlog("eof")
@@ -152,7 +159,6 @@ func (state *parseState) loop(debug bool) error {
 				return state.unexpected(item)
 			}
 			if len(state.top.Children())%2 == 0 {
-				fmt.Println(state.top.Children())
 				return state.unexpected(item)
 			}
 		case lComma:

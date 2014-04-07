@@ -19,8 +19,15 @@ const (
 	lNull
 )
 
+func lexSlurpSpace(lex *lexer.Lexer) int {
+	return lex.AcceptRun(" \t\n")
+}
+
 // NOTE assumes utf-8 input
 func lexStart(lex *lexer.Lexer) lexer.StateFn {
+	if lexSlurpSpace(lex) > 0 {
+		lex.Ignore()
+	}
 	c, _ := lex.Peek()
 	if c == lexer.EOF {
 		lex.Emit(lexer.ItemEOF)
@@ -122,32 +129,25 @@ func lexFalse(lex *lexer.Lexer) lexer.StateFn {
 	return lexStart
 }
 
-// can produce bad numbers. but there will not be any ambiguity of syntax error when that happens.
 func lexNumber(lex *lexer.Lexer) lexer.StateFn {
 	lex.Accept("-")
 	if lex.Accept("0") {
 		return lexNumberFraction
 	}
-	lex.AcceptRun("123456789")
-	/*
 	n := lex.AcceptRun("123456789")
 	if n == 0 {
 		return lex.Errorf("expected non-zero digit")
 	}
-	*/
 	return lexNumberFraction
 }
 func lexNumberFraction(lex *lexer.Lexer) lexer.StateFn {
 	if !lex.Accept(".") {
 		return lexNumberExponent
 	}
-	lex.AcceptRun("0123456789")
-	/*
 	n := lex.AcceptRun("0123456789")
 	if n == 0 {
 		return lex.Errorf("expected digit")
 	}
-	*/
 	return lexNumberExponent
 }
 func lexNumberExponent(lex *lexer.Lexer) lexer.StateFn {
@@ -156,13 +156,10 @@ func lexNumberExponent(lex *lexer.Lexer) lexer.StateFn {
 		return lexStart
 	}
 	lex.Accept("+-")
-	lex.AcceptRun("0123456789")
-	/*
 	n := lex.AcceptRun("0123456789")
 	if n == 0 {
 		return lex.Errorf("expected digit")
 	}
-	*/
 	lex.Emit(lNumber)
 	return lexStart
 }

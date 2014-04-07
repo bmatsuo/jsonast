@@ -20,6 +20,34 @@ func (js *JSON) Type() Type {
 	return js.ast.Type()
 }
 
+func (js *JSON) String() (string, error) {
+	if js.Type() != TString {
+		return "", fmt.Errorf("not a string")
+	}
+	return js.ast.String(), nil
+}
+
+func (js *JSON) Float64() (float64, error) {
+	if js.Type() != TNumber {
+		return 0, fmt.Errorf("not a number")
+	}
+	return js.ast.Float64()
+}
+
+func (js *JSON) Int64() (float64, error) {
+	if js.Type() != TNumber {
+		return 0, fmt.Errorf("not a number")
+	}
+	return js.ast.Float64()
+}
+
+func (js *JSON) Bool() (bool, error) {
+	if js.Type() != TNumber {
+		return false, fmt.Errorf("not a bool")
+	}
+	return js.ast.Bool(), nil
+}
+
 // panics if js.Type() is not TArray or TObject
 func (js *JSON) Len() (int, error) {
 	if js.err != nil {
@@ -197,7 +225,7 @@ func ParseJSON(p []byte) (JSON, error) {
 	if len(roots) == 0 {
 		return JSON{}, fmt.Errorf("no json value found")
 	}
-	if len(roots) > 0 {
+	if len(roots) > 1 {
 		return JSON{}, fmt.Errorf("multiple json values found")
 	}
 	return JSON{ast: roots[0]}, nil

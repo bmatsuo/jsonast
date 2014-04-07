@@ -11,6 +11,18 @@ func TestParseEmpty(t *testing.T) {
 	roots, err := Parse(nil)
 	yt.Nil(t, err)
 	yt.Equal(t, 0, len(roots))
+	roots, err = Parse([]byte(" "))
+	yt.Nil(t, err)
+	yt.Equal(t, 0, len(roots))
+	roots, err = Parse([]byte("\t"))
+	yt.Nil(t, err)
+	yt.Equal(t, 0, len(roots))
+	roots, err = Parse([]byte("\n"))
+	yt.Nil(t, err)
+	yt.Equal(t, 0, len(roots))
+	roots, err = Parse([]byte("\n\t "))
+	yt.Nil(t, err)
+	yt.Equal(t, 0, len(roots))
 }
 
 func TestParsePrimativeSimple(t *testing.T) {
@@ -78,5 +90,20 @@ func TestParseArraySimple(t *testing.T) {
 		children := roots[0].Children()
 		yt.Equal(t, 1, len(children), desc)
 		yt.Equal(t, test.typ, children[0].Type(), desc)
+	}
+}
+
+func TestParseComplex(t *testing.T) {
+	for i, test := range []struct {
+		raw string
+	}{
+		{`[{"abc":"def"}]`},
+		{`[null,{"x":{"y":"yy"},"z":["z1","z2","z3"]}]`},
+	} {
+		desc := fmt.Sprintf("test %d: %q", i, test.raw)
+		roots, err := parse([]byte(test.raw), false)
+		yt.Nil(t, err, desc)
+		yt.Equal(t, 1, len(roots), desc)
+		yt.Equal(t, test.raw, string(roots[0].JSON(nil)), desc)
 	}
 }

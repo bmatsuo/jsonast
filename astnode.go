@@ -1,5 +1,9 @@
 package jsonast
 
+import (
+	"strconv"
+)
+
 type Type uint
 
 const (
@@ -37,9 +41,9 @@ type ASTNode interface {
 	// panics if Type() != TString
 	String() string
 	// panics if Type() != TNumber
-	Float64() float64
+	Float64() (float64, error)
 	// panics if Type() != TNumber
-	Int64() int64
+	Int64() (int64, error)
 	// panics if Type() != TBoolean
 	Bool() bool
 	// only types in this package can implement ASTNode
@@ -66,9 +70,10 @@ func (nod *node) panicType(unless ...Type) {
 	panic("invalid type")
 }
 
+// BUG this is totally broken
 func (nod *node) String() string {
 	nod.panicType(TString)
-	return "FIXME"
+	return string(nod.raw[1 : len(nod.raw)-1])
 }
 
 func (nod *node) Bool() bool {
@@ -76,14 +81,14 @@ func (nod *node) Bool() bool {
 	return nod.raw[0] == 't'
 }
 
-func (nod *node) Int64() int64 {
+func (nod *node) Int64() (int64, error) {
 	nod.panicType(TNumber)
-	return -1
+	return strconv.ParseInt(string(nod.raw), 10, 64)
 }
 
-func (nod *node) Float64() float64 {
+func (nod *node) Float64() (float64, error) {
 	nod.panicType(TNumber)
-	return -1
+	return strconv.ParseFloat(string(nod.raw), 64)
 }
 
 func (nod *node) JSON(js []byte) []byte {
@@ -117,7 +122,7 @@ func (nod *node) Children() []ASTNode {
 func (nod *node) arrayJSON(js []byte) []byte {
 	n := len(nod.children)
 	if n == 0 {
-		return []byte{'[', ']'}
+		return append(js, '[', ']')
 	}
 	js = append(js, '[')
 	for i := 0; i < n; i++ {
@@ -133,9 +138,9 @@ func (nod *node) arrayJSON(js []byte) []byte {
 func (nod *node) objectJSON(js []byte) []byte {
 	n := len(nod.children)
 	if n == 0 {
-		return []byte{'{', '}'}
+		return append(js, '{', '}')
 	}
-	if n%2 == 0 {
+	if n%2 == 1 {
 		panic("odd number of children")
 	}
 	js = append(js, '{')
