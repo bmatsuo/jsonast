@@ -61,13 +61,13 @@ func (state *parseState) pop() (nod ASTNode, isempty bool) {
 	}
 	nod = state.top
 	state.stack[n-1] = nil
-	state.stack = state.stack[:n-1:cap(state.stack)]
+	state.stack = state.stack[:n-1 : cap(state.stack)]
 	n-- // new len
 	if n > 0 {
 		state.top = state.stack[n-1]
 		return nod, false
 	}
-state.top = nil
+	state.top = nil
 	return nod, true
 }
 
@@ -129,6 +129,7 @@ func (state *parseState) loop(debug bool) error {
 		case lLeftCurly:
 			itemlog("left curly")
 			state.push(&node{typ: TObject})
+			state.lex.Free(item)
 		case lRightCurly:
 			itemlog("right curly")
 			nod, _ := state.pop()
@@ -192,5 +193,7 @@ func (state *parseState) loop(debug bool) error {
 		default:
 			return state.unexpected(item)
 		}
+
+		state.lex.Free(item)
 	}
 }
