@@ -140,7 +140,7 @@ func (state *parseState) loop(debug bool) error {
 }
 
 func parseJumpString(state *parseState, item *lexer.Item) error {
-	state.push(&node{typ: TString, raw: item.Value})
+	state.push(rawString(item.Value))
 	state.pop()
 	return nil
 }
@@ -201,17 +201,17 @@ var parseJump = map[lexer.ItemType]func(state *parseState, item *lexer.Item) err
 	},
 	lString: parseJumpString,
 	lNumber: func(state *parseState, item *lexer.Item) error {
-		state.push(&node{typ: TNumber, raw: item.Value})
+		state.push(rawNumber(item.Value))
 		state.pop()
 		return nil
 	},
 	lBoolean: func(state *parseState, item *lexer.Item) error {
-		state.push(&node{typ: TBoolean, raw: item.Value})
+		state.push(rawBoolean(item.Value))
 		state.pop()
 		return nil
 	},
 	lNull: func(state *parseState, item *lexer.Item) error {
-		state.push(&node{typ: TNull, raw: item.Value})
+		state.push(rawNull(item.Value))
 		state.pop()
 		return nil
 	},
