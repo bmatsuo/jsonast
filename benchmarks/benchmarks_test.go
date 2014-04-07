@@ -6,7 +6,23 @@ import (
 
 	"encoding/json"
 	"testing"
+	"unicode/utf8"
 )
+
+func BenchmarkDecodeRunes(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		p := gists
+		pos := 0
+		n := len(gists)
+		for pos < n {
+			c, width := utf8.DecodeRune(p[pos:])
+			if c == utf8.RuneError && width == 1 {
+				b.Fatal("decode error at %d", pos)
+			}
+			pos += width
+		}
+	}
+}
 
 func BenchmarkSimplejson(b *testing.B) {
 	for i := 0; i < b.N; i++ {
@@ -25,4 +41,12 @@ func BenchmarkJsonast(b *testing.B) {
 		}
 	}
 }
-func BenchmarkEncodingJson(b *testing.B) {}
+func BenchmarkEncodingJson(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		var v interface{}
+		err := json.Unmarshal(gists, &v)
+		if err != nil {
+			b.Fatal("parse error: ", err)
+		}
+	}
+}
