@@ -180,10 +180,11 @@ func lexString(lex *lexer.Lexer) lexer.StateFn {
 			if lex.Accept("u") {
 				for i := 0; i < 4; i++ {
 					if !lex.Accept("0123456789abcdefABCDEF") {
-						return lex.Errorf("return expected hex digit")
+						return lex.Errorf("expected hex digit")
 					}
 				}
 			}
+			continue
 		}
 		c, _ := lex.Advance()
 		if unicode.IsControl(c) {
