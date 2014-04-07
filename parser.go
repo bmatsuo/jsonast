@@ -109,11 +109,6 @@ func (state *parseState) loop(debug bool) error {
 		if err != nil {
 			return err
 		}
-		itemlog := func(v ...interface{}) {
-			if debug {
-				fmt.Printf("%v: %q\n", fmt.Sprint(v...), item.Value)
-			}
-		}
 		if debug {
 			if state.top != nil {
 				fmt.Printf("top: %d children: %d\n", state.top.Type(), len(state.top.Children()))
@@ -121,79 +116,96 @@ func (state *parseState) loop(debug bool) error {
 				fmt.Println("empty stack")
 			}
 		}
-		switch item.Type {
-		case lexer.ItemEOF:
-			itemlog("eof")
+		if item.Type == lexer.ItemEOF {
 			// do checks
 			return state.eof(item)
-		case lLeftCurly:
-			itemlog("left curly")
-			state.push(&node{typ: TObject})
-			state.lex.Free(item)
-		case lRightCurly:
-			itemlog("right curly")
-			nod, _ := state.pop()
-			if nod == nil {
-				return state.unexpected(item)
+		}
+		jmp, ok := parseJump[item.Type]
+		if ok {
+			err = jmp(state, item)
+			if err != nil {
+				return err
 			}
-			if nod.Type() != TObject {
-				return state.unexpected(item)
-			}
-		case lLeftSquare:
-			itemlog("left square")
-			state.push(&node{typ: TArray})
-		case lRightSquare:
-			itemlog("right square")
-			nod, _ := state.pop()
-			if nod == nil {
-				return state.unexpected(item)
-			}
-			if nod.Type() != TArray {
-				return state.unexpected(item)
-			}
-		case lColon:
-			itemlog("colon")
-			if state.top == nil {
-				return state.unexpected(item)
-			}
-			if state.top.Type() != TObject {
-				return state.unexpected(item)
-			}
-			if len(state.top.Children())%2 == 0 {
-				return state.unexpected(item)
-			}
-		case lComma:
-			itemlog("comma")
-			if state.top == nil {
-				return state.unexpected(item)
-			}
-			if state.top.Type() == TObject {
-				if len(state.top.Children())%2 == 1 {
-					return state.unexpected(item)
-				}
-			} else if state.top.Type() != TArray {
-				return state.unexpected(item)
-			}
-		case lString:
-			itemlog("string")
-			state.push(&node{typ: TString, raw: item.Value})
-			state.pop()
-		case lNumber:
-			itemlog("number")
-			state.push(&node{typ: TNumber, raw: item.Value})
-			state.pop()
-		case lBoolean:
-			itemlog("boolean")
-			state.push(&node{typ: TBoolean, raw: item.Value})
-			state.pop()
-		case lNull:
-			itemlog("null")
-			state.push(&node{typ: TNull, raw: item.Value})
-			state.pop()
-		default:
+		} else {
 			return state.unexpected(item)
 		}
 
 		state.lex.Free(item)
 	}
+}
+
+var parseJump = map[lexer.ItemType]func(state *parseState, item *lexer.Item) error{
+	lLeftCurly: func(state *parseState, item *lexer.Item) error {
+		state.push(&node{typ: TObject})
+		return nil
+	},
+	lRightCurly: func(state *parseState, item *lexer.Item) error {
+		nod, _ := state.pop()
+		if nod == nil {
+			return state.unexpected(item)
+		}
+		if nod.Type() != TObject {
+			return state.unexpected(item)
+		}
+		return nil
+	},
+	lLeftSquare: func(state *parseState, item *lexer.Item) error {
+		state.push(&node{typ: TArray})
+		return nil
+	},
+	lRightSquare: func(state *parseState, item *lexer.Item) error {
+		nod, _ := state.pop()
+		if nod == nil {
+			return state.unexpected(item)
+		}
+		if nod.Type() != TArray {
+			return state.unexpected(item)
+		}
+		return nil
+	},
+	lColon: func(state *parseState, item *lexer.Item) error {
+		if state.top == nil {
+			return state.unexpected(item)
+		}
+		if state.top.Type() != TObject {
+			return state.unexpected(item)
+		}
+		if len(state.top.Children())%2 == 0 {
+			return state.unexpected(item)
+		}
+		return nil
+	},
+	lComma: func(state *parseState, item *lexer.Item) error {
+		if state.top == nil {
+			return state.unexpected(item)
+		}
+		if state.top.Type() == TObject {
+			if len(state.top.Children())%2 == 1 {
+				return state.unexpected(item)
+			}
+		} else if state.top.Type() != TArray {
+			return state.unexpected(item)
+		}
+		return nil
+	},
+	lString: func(state *parseState, item *lexer.Item) error {
+		state.push(&node{typ: TString, raw: item.Value})
+		state.pop()
+		return nil
+	},
+	lNumber: func(state *parseState, item *lexer.Item) error {
+		state.push(&node{typ: TNumber, raw: item.Value})
+		state.pop()
+		return nil
+	},
+	lBoolean: func(state *parseState, item *lexer.Item) error {
+		state.push(&node{typ: TBoolean, raw: item.Value})
+		state.pop()
+		return nil
+	},
+	lNull: func(state *parseState, item *lexer.Item) error {
+		state.push(&node{typ: TNull, raw: item.Value})
+		state.pop()
+		return nil
+	},
 }
