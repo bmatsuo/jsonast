@@ -21,6 +21,16 @@ func BenchmarkDecodeRunes(b *testing.B) {
 			}
 			pos += width
 		}
+		p = swagger
+		pos = 0
+		n = len(swagger)
+		for pos < n {
+			c, width := utf8.DecodeRune(p[pos:])
+			if c == utf8.RuneError && width == 1 {
+				b.Fatal("decode error at %d", pos)
+			}
+			pos += width
+		}
 	}
 }
 
