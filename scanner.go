@@ -169,11 +169,12 @@ func lexString(lex *lexer.Lexer) lexer.StateFn {
 		return lex.Errorf("expected quote")
 	}
 	for {
-		if lex.AcceptRune('"') {
+		c, _ := lex.Advance()
+		if c == '"' {
 			lex.Emit(lString)
 			return lexStart
 		}
-		if lex.AcceptRune('\\') {
+		if c == '\\' {
 			if lex.Accept(`"\/bfnrt`) {
 				continue
 			}
@@ -189,7 +190,6 @@ func lexString(lex *lexer.Lexer) lexer.StateFn {
 			}
 			continue
 		}
-		c, _ := lex.Advance()
 		if unicode.IsControl(c) {
 			return lex.Errorf("unexpected control character")
 		}
