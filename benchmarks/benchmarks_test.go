@@ -31,11 +31,20 @@ func BenchmarkSimplejson(b *testing.B) {
 		if err != nil {
 			b.Fatal("parse error: ", err)
 		}
+		js = simplejson.Json{}
+		err = json.Unmarshal(swagger, &js)
+		if err != nil {
+			b.Fatal("parse error: ", err)
+		}
 	}
 }
 func BenchmarkJsonast(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_, err := jsonast.ParseJSON(gists)
+		if err != nil {
+			b.Fatal("parse error: ", err)
+		}
+		_, err = jsonast.ParseJSON(swagger)
 		if err != nil {
 			b.Fatal("parse error: ", err)
 		}
@@ -45,6 +54,11 @@ func BenchmarkEncodingJson(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		var v interface{}
 		err := json.Unmarshal(gists, &v)
+		if err != nil {
+			b.Fatal("parse error: ", err)
+		}
+		v = nil
+		err = json.Unmarshal(gists, &v)
 		if err != nil {
 			b.Fatal("parse error: ", err)
 		}

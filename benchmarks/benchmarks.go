@@ -26,8 +26,197 @@ func main() {
 		if err != nil {
 			log.Fatal("parse error: ", err)
 		}
+		_, err = jsonast.ParseJSON(swagger)
+		if err != nil {
+			log.Fatal("parse error: ", err)
+		}
 	}
 }
+
+// https://github.com/wordnik/swagger-core/blob/master/schemas/api-declaration-schema.json
+var swagger = []byte(`
+{
+	"type": "object",
+	"$schema": "http://json-schema.org/draft-04/schema",
+	"required": [
+	"swaggerVersion",
+	"resourcePath",
+	"apis",
+	"basePath"
+	],
+	"properties": {
+		"apiVersion": {
+			"type": "string"
+		},
+		"basePath": {
+			"type": "string"
+		},
+		"swaggerVersion": {
+			"enum": [
+			"1.2"
+			]
+		},
+		"consumes": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			}
+		},
+		"produces": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			}
+		},
+		"resourcePath": {
+			"type": "string"
+		},
+		"apis": {
+			"type": "array",
+			"items": [
+			{
+				"type": "object",
+				"required": [
+				"path",
+				"operations"
+				],
+				"properties": {
+					"path": {
+						"type": "string"
+					},
+					"operations": {
+						"type": "array",
+						"items": [
+						{
+							"type": "object",
+							"required": [
+							"method",
+							"nickname",
+							"summary",
+							"type"
+							],
+							"properties": {
+								"authorizations": {
+									"type": "array",
+									"items": {
+										"type": "string"
+									}
+								},
+								"method": {
+									"type": "string",
+									"enum": [
+									"GET",
+									"PUT",
+									"POST",
+									"DELETE",
+									"OPTIONS",
+									"PATCH",
+									"LINK"
+									]
+								},
+								"nickname": {
+									"type": "string"
+								},
+								"summary": {
+									"type": "string"
+								},
+								"notes": {
+									"type": "string"
+								},
+								"type": {
+									"type": "string"
+								},
+								"parameters": {
+									"type": "array",
+									"items": {
+										"type": "object",
+										"required": [
+										"name",
+										"paramType",
+										"required",
+										"type"
+										],
+										"properties": {
+											"allowMultiple": {
+												"type": "boolean",
+												"enum": [
+												true,
+												false
+												]
+											},
+											"description": {
+												"type": "string"
+											},
+											"name": {
+												"type": "string"
+											},
+											"paramType": {
+												"type": "string",
+												"enum": [
+												"query",
+												"path",
+												"body",
+												"header"
+												]
+											},
+											"required": {
+												"type": "boolean",
+												"enum": [
+												true,
+												false
+												]
+											},
+											"type": {
+												"type": "string"
+											},
+											"items": {
+												"anyOf": [
+												{
+													"$ref": "#"
+												},
+												{
+													"$ref": "#/definitions/schemaArray"
+												}
+												],
+												"default": {}
+											}
+										}
+									}
+								},
+								"produces": {
+									"type": "array",
+									"items": {
+										"type": "string"
+									}
+								},
+								"responseMessages": {
+									"type": "array",
+									"items": {
+										"type": "object",
+										"properties": {
+											"code": {
+												"type": "number"
+											},
+											"message": {
+												"type": "string"
+											}
+										}
+									}
+								}
+							}
+						}
+						]
+					}
+				}
+			}
+			]
+		},
+		"models": {
+
+		}
+	}
+}
+`)
 
 var gists = []byte(`[
 	{
