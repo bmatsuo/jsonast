@@ -21,26 +21,24 @@ const (
 
 var spaceRunes = []rune(" \t\n")
 
-func lexSlurpSpace(lex *lexer.Lexer) int {
-	return lex.AcceptRunRunes(spaceRunes)
-}
-
 // NOTE assumes utf-8 input
 func lexStart(lex *lexer.Lexer) lexer.StateFn {
-	if lexSlurpSpace(lex) > 0 {
+	if lex.AcceptRunRunes(spaceRunes) > 0 {
 		lex.Ignore()
 	}
-	c, _ := lex.Peek()
+	c, _ := lex.Advance()
 	if c == lexer.EOF {
 		lex.Emit(lexer.ItemEOF)
 		return nil
 	}
 	typ, found := lexNom[c]
 	if found {
-		lex.Advance()
 		lex.Emit(typ)
 		return lexStart
 	}
+
+	//lex.Backup()
+
 	switch c {
 	case '"':
 		return lexString
@@ -50,11 +48,14 @@ func lexStart(lex *lexer.Lexer) lexer.StateFn {
 		return lexFalse
 	case 'n':
 		return lexNull
-	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-':
-		return lexNumber
-	default:
-		return lex.Errorf("unexpected rune '%c'", c)
 	}
+
+	if c == '-' || '0' <= c && c <= '9' {
+		lex.Backup()
+		return lexNumber
+	}
+
+	return lex.Errorf("unexpected rune '%c'", c)
 }
 
 var lexNom = map[rune]lexer.ItemType{
@@ -67,10 +68,10 @@ var lexNom = map[rune]lexer.ItemType{
 }
 
 func lexNull(lex *lexer.Lexer) lexer.StateFn {
-	if !lex.AcceptRune('n') {
-		lex.Errorf("expected 'n'")
-		return nil
-	}
+	//if !lex.AcceptRune('n') {
+	//	lex.Errorf("expected 'n'")
+	//	return nil
+	//}
 	if !lex.AcceptRune('u') {
 		lex.Errorf("expected 'u'")
 		return nil
@@ -87,10 +88,10 @@ func lexNull(lex *lexer.Lexer) lexer.StateFn {
 	return lexStart
 }
 func lexTrue(lex *lexer.Lexer) lexer.StateFn {
-	if !lex.AcceptRune('t') {
-		lex.Errorf("expected 't'")
-		return nil
-	}
+	//if !lex.AcceptRune('t') {
+	//	lex.Errorf("expected 't'")
+	//	return nil
+	//}
 	if !lex.AcceptRune('r') {
 		lex.Errorf("expected 'r'")
 		return nil
@@ -107,10 +108,10 @@ func lexTrue(lex *lexer.Lexer) lexer.StateFn {
 	return lexStart
 }
 func lexFalse(lex *lexer.Lexer) lexer.StateFn {
-	if !lex.AcceptRune('f') {
-		lex.Errorf("expected 'f'")
-		return nil
-	}
+	//if !lex.AcceptRune('f') {
+	//	lex.Errorf("expected 'f'")
+	//	return nil
+	//}
 	if !lex.AcceptRune('a') {
 		lex.Errorf("expected 'a'")
 		return nil
@@ -169,9 +170,9 @@ func lexNumberExponent(lex *lexer.Lexer) lexer.StateFn {
 var escapeRunes = []rune(`"\/bfnrt`)
 
 func lexString(lex *lexer.Lexer) lexer.StateFn {
-	if !lex.AcceptRune('"') {
-		return lex.Errorf("expected quote")
-	}
+	//if !lex.AcceptRune('"') {
+	//	return lex.Errorf("expected quote")
+	//}
 	for {
 		c, _ := lex.Advance()
 		if c == '"' {
@@ -191,8 +192,9 @@ func lexString(lex *lexer.Lexer) lexer.StateFn {
 						return lex.Errorf("expected hex digit")
 					}
 				}
+				continue
 			}
-			continue
+			return lex.Errorf("unexpected escaped character")
 		}
 		if unicode.IsControl(c) {
 			return lex.Errorf("unexpected control character")
