@@ -19,8 +19,10 @@ const (
 	lNull
 )
 
+var spaceRunes = []rune(" \t\n")
+
 func lexSlurpSpace(lex *lexer.Lexer) int {
-	return lex.AcceptRun(" \t\n")
+	return lex.AcceptRunRunes(spaceRunes)
 }
 
 // NOTE assumes utf-8 input
@@ -164,6 +166,8 @@ func lexNumberExponent(lex *lexer.Lexer) lexer.StateFn {
 	return lexStart
 }
 
+var escapeRunes = []rune(`"\/bfnrt`)
+
 func lexString(lex *lexer.Lexer) lexer.StateFn {
 	if !lex.AcceptRune('"') {
 		return lex.Errorf("expected quote")
@@ -175,7 +179,7 @@ func lexString(lex *lexer.Lexer) lexer.StateFn {
 			return lexStart
 		}
 		if c == '\\' {
-			if lex.Accept(`"\/bfnrt`) {
+			if lex.AcceptRunes(escapeRunes) {
 				continue
 			}
 			if lex.AcceptRune('u') {
