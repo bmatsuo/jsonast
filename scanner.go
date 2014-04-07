@@ -65,19 +65,19 @@ var lexNom = map[rune]lexer.ItemType{
 }
 
 func lexNull(lex *lexer.Lexer) lexer.StateFn {
-	if !lex.Accept("n") {
+	if !lex.AcceptRune('n') {
 		lex.Errorf("expected 'n'")
 		return nil
 	}
-	if !lex.Accept("u") {
+	if !lex.AcceptRune('u') {
 		lex.Errorf("expected 'u'")
 		return nil
 	}
-	if !lex.Accept("l") {
+	if !lex.AcceptRune('l') {
 		lex.Errorf("expected 'l'")
 		return nil
 	}
-	if !lex.Accept("l") {
+	if !lex.AcceptRune('l') {
 		lex.Errorf("expected 'l'")
 		return nil
 	}
@@ -85,19 +85,19 @@ func lexNull(lex *lexer.Lexer) lexer.StateFn {
 	return lexStart
 }
 func lexTrue(lex *lexer.Lexer) lexer.StateFn {
-	if !lex.Accept("t") {
+	if !lex.AcceptRune('t') {
 		lex.Errorf("expected 't'")
 		return nil
 	}
-	if !lex.Accept("r") {
+	if !lex.AcceptRune('r') {
 		lex.Errorf("expected 'r'")
 		return nil
 	}
-	if !lex.Accept("u") {
+	if !lex.AcceptRune('u') {
 		lex.Errorf("expected 'u'")
 		return nil
 	}
-	if !lex.Accept("e") {
+	if !lex.AcceptRune('e') {
 		lex.Errorf("expected 'e'")
 		return nil
 	}
@@ -105,23 +105,23 @@ func lexTrue(lex *lexer.Lexer) lexer.StateFn {
 	return lexStart
 }
 func lexFalse(lex *lexer.Lexer) lexer.StateFn {
-	if !lex.Accept("f") {
+	if !lex.AcceptRune('f') {
 		lex.Errorf("expected 'f'")
 		return nil
 	}
-	if !lex.Accept("a") {
+	if !lex.AcceptRune('a') {
 		lex.Errorf("expected 'a'")
 		return nil
 	}
-	if !lex.Accept("l") {
+	if !lex.AcceptRune('l') {
 		lex.Errorf("expected 'l'")
 		return nil
 	}
-	if !lex.Accept("s") {
+	if !lex.AcceptRune('s') {
 		lex.Errorf("expected 's'")
 		return nil
 	}
-	if !lex.Accept("e") {
+	if !lex.AcceptRune('e') {
 		lex.Errorf("expected 'e'")
 		return nil
 	}
@@ -130,21 +130,21 @@ func lexFalse(lex *lexer.Lexer) lexer.StateFn {
 }
 
 func lexNumber(lex *lexer.Lexer) lexer.StateFn {
-	lex.Accept("-")
-	if lex.Accept("0") {
+	lex.AcceptRune('-')
+	if lex.AcceptRune('0') {
 		return lexNumberFraction
 	}
-	n := lex.AcceptRun("123456789")
+	n := lex.AcceptRunMinMax('1', '9')
 	if n == 0 {
 		return lex.Errorf("expected non-zero digit")
 	}
 	return lexNumberFraction
 }
 func lexNumberFraction(lex *lexer.Lexer) lexer.StateFn {
-	if !lex.Accept(".") {
+	if !lex.AcceptRune('.') {
 		return lexNumberExponent
 	}
-	n := lex.AcceptRun("0123456789")
+	n := lex.AcceptRunMinMax('0', '9')
 	if n == 0 {
 		return lex.Errorf("expected digit")
 	}
@@ -156,7 +156,7 @@ func lexNumberExponent(lex *lexer.Lexer) lexer.StateFn {
 		return lexStart
 	}
 	lex.Accept("+-")
-	n := lex.AcceptRun("0123456789")
+	n := lex.AcceptRunMinMax('0', '9')
 	if n == 0 {
 		return lex.Errorf("expected digit")
 	}
@@ -165,21 +165,24 @@ func lexNumberExponent(lex *lexer.Lexer) lexer.StateFn {
 }
 
 func lexString(lex *lexer.Lexer) lexer.StateFn {
-	if !lex.Accept(`"`) {
+	if !lex.AcceptRune('"') {
 		return lex.Errorf("expected quote")
 	}
 	for {
-		if lex.Accept(`"`) {
+		if lex.AcceptRune('"') {
 			lex.Emit(lString)
 			return lexStart
 		}
-		if lex.Accept(`\`) {
+		if lex.AcceptRune('\\') {
 			if lex.Accept(`"\/bfnrt`) {
 				continue
 			}
-			if lex.Accept("u") {
+			if lex.AcceptRune('u') {
 				for i := 0; i < 4; i++ {
-					if !lex.Accept("0123456789abcdefABCDEF") {
+					accept := lex.AcceptMinMax('0', '9') ||
+						lex.AcceptMinMax('a', 'f') ||
+						lex.AcceptMinMax('A', 'F')
+					if !accept {
 						return lex.Errorf("expected hex digit")
 					}
 				}
