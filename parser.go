@@ -61,13 +61,13 @@ func (state *parseState) pop() (nod ASTNode, isempty bool) {
 	}
 	nod = state.top
 	state.stack[n-1] = nil
-	state.stack = state.stack[:n-1]
+	state.stack = state.stack[:n-1:cap(state.stack)]
 	n-- // new len
 	if n > 0 {
 		state.top = state.stack[n-1]
 		return nod, false
 	}
-	state.top = nil
+state.top = nil
 	return nod, true
 }
 
@@ -175,19 +175,19 @@ func (state *parseState) loop(debug bool) error {
 			}
 		case lString:
 			itemlog("string")
-			state.push(&node{typ: TString, raw: []byte(item.Value)})
+			state.push(&node{typ: TString, raw: item.Value})
 			state.pop()
 		case lNumber:
 			itemlog("number")
-			state.push(&node{typ: TNumber, raw: []byte(item.Value)})
+			state.push(&node{typ: TNumber, raw: item.Value})
 			state.pop()
 		case lBoolean:
 			itemlog("boolean")
-			state.push(&node{typ: TBoolean, raw: []byte(item.Value)})
+			state.push(&node{typ: TBoolean, raw: item.Value})
 			state.pop()
 		case lNull:
 			itemlog("null")
-			state.push(&node{typ: TNull, raw: []byte(item.Value)})
+			state.push(&node{typ: TNull, raw: item.Value})
 			state.pop()
 		default:
 			return state.unexpected(item)
