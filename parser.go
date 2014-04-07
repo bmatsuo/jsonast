@@ -120,18 +120,29 @@ func (state *parseState) loop(debug bool) error {
 			// do checks
 			return state.eof(item)
 		}
-		jmp, ok := parseJump[item.Type]
-		if ok {
-			err = jmp(state, item)
-			if err != nil {
-				return err
-			}
+		if item.Type == lString {
+			// optimization because of high string frequency
+			err = parseJumpString(state, item)
 		} else {
-			return state.unexpected(item)
+			jmp, ok := parseJump[item.Type]
+			if ok {
+				err = jmp(state, item)
+				if err != nil {
+					return err
+				}
+			} else {
+				return state.unexpected(item)
+			}
 		}
 
 		state.lex.Free(item)
 	}
+}
+
+func parseJumpString(state *parseState, item *lexer.Item) error {
+	state.push(&node{typ: TString, raw: item.Value})
+	state.pop()
+	return nil
 }
 
 var parseJump = map[lexer.ItemType]func(state *parseState, item *lexer.Item) error{
@@ -188,11 +199,7 @@ var parseJump = map[lexer.ItemType]func(state *parseState, item *lexer.Item) err
 		}
 		return nil
 	},
-	lString: func(state *parseState, item *lexer.Item) error {
-		state.push(&node{typ: TString, raw: item.Value})
-		state.pop()
-		return nil
-	},
+	lString: parseJumpString,
 	lNumber: func(state *parseState, item *lexer.Item) error {
 		state.push(&node{typ: TNumber, raw: item.Value})
 		state.pop()
