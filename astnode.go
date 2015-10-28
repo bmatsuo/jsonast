@@ -21,10 +21,11 @@ func (t Type) IsValid() bool {
 	return t > TInvalid && t < tInvalid
 }
 
-func IsNull(node ASTNode) bool {
-	return node.Type() == TNull
+func IsNull(nod ASTNode) bool {
+	return nod.typ == TNull
 }
 
+/*
 type ASTNode interface {
 	// the node's Type
 	Type() Type
@@ -49,19 +50,20 @@ type ASTNode interface {
 	// only types in this package can implement ASTNode
 	sealASTNode()
 }
+*/
 
-type node struct {
+type ASTNode struct {
 	typ      Type
-	raw      []byte    // only present for primatives
-	children []ASTNode // only present for arrays and objects. key-value pairs are consecutive nodes.
+	raw      []byte     // only present for primatives
+	children []*ASTNode // only present for arrays and objects. key-value pairs are consecutive nodes.
 }
 
-func (nod *node) sealASTNode() {}
+func (nod *ASTNode) sealASTNode() {}
 
-func (nod *node) Type() Type { return nod.typ }
+func (nod *ASTNode) Type() Type { return nod.typ }
 
 // panics if nod.typ is note in unless
-func (nod *node) panicType(unless ...Type) {
+func (nod *ASTNode) panicType(unless ...Type) {
 	for i := range unless {
 		if nod.typ == unless[i] {
 			return
@@ -71,27 +73,27 @@ func (nod *node) panicType(unless ...Type) {
 }
 
 // BUG this is totally broken
-func (nod *node) String() string {
+func (nod *ASTNode) String() string {
 	nod.panicType(TString)
 	return string(nod.raw[1 : len(nod.raw)-1])
 }
 
-func (nod *node) Bool() bool {
+func (nod *ASTNode) Bool() bool {
 	nod.panicType(TBoolean)
 	return nod.raw[0] == 't'
 }
 
-func (nod *node) Int64() (int64, error) {
+func (nod *ASTNode) Int64() (int64, error) {
 	nod.panicType(TNumber)
 	return strconv.ParseInt(string(nod.raw), 10, 64)
 }
 
-func (nod *node) Float64() (float64, error) {
+func (nod *ASTNode) Float64() (float64, error) {
 	nod.panicType(TNumber)
 	return strconv.ParseFloat(string(nod.raw), 64)
 }
 
-func (nod *node) JSON(js []byte) []byte {
+func (nod *ASTNode) JSON(js []byte) []byte {
 	if !nod.typ.IsValid() {
 		panic("invalid node")
 	}
@@ -105,21 +107,21 @@ func (nod *node) JSON(js []byte) []byte {
 	}
 }
 
-func (nod *node) PushChild(c ASTNode) {
+func (nod *ASTNode) PushChild(c *ASTNode) {
 	if nod.typ == TObject || nod.typ == TArray {
 		nod.children = append(nod.children, c)
 		return
 	}
 	panic("invalid node type")
 }
-func (nod *node) Children() []ASTNode {
+func (nod *ASTNode) Children() []*ASTNode {
 	if nod.typ == TObject || nod.typ == TArray {
 		return nod.children
 	}
 	panic("invalid node type")
 }
 
-func (nod *node) arrayJSON(js []byte) []byte {
+func (nod *ASTNode) arrayJSON(js []byte) []byte {
 	n := len(nod.children)
 	if n == 0 {
 		return append(js, '[', ']')
@@ -135,7 +137,7 @@ func (nod *node) arrayJSON(js []byte) []byte {
 	return js
 }
 
-func (nod *node) objectJSON(js []byte) []byte {
+func (nod *ASTNode) objectJSON(js []byte) []byte {
 	n := len(nod.children)
 	if n == 0 {
 		return append(js, '{', '}')

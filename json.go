@@ -10,7 +10,7 @@ type Selector struct {
 }
 
 type JSON struct {
-	ast ASTNode
+	ast *ASTNode
 	err error
 	a   []JSON
 	m   map[string]*JSON

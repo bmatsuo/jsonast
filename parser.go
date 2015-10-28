@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-func Parse(p []byte) (roots []ASTNode, err error) {
+func Parse(p []byte) (roots []*ASTNode, err error) {
 	state := new(parseState)
 	state.in = p
 	state.lex = lexer.New(lexStart, p)
@@ -17,7 +17,7 @@ func Parse(p []byte) (roots []ASTNode, err error) {
 	return state.roots, nil
 }
 
-func parse(p []byte, debug bool) (roots []ASTNode, err error) {
+func parse(p []byte, debug bool) (roots []*ASTNode, err error) {
 	state := new(parseState)
 	state.in = p
 	state.lex = lexer.New(lexStart, p)
@@ -31,13 +31,13 @@ func parse(p []byte, debug bool) (roots []ASTNode, err error) {
 type parseState struct {
 	in    []byte
 	lex   *lexer.Lexer
-	stack []ASTNode
-	top   ASTNode
-	root  ASTNode
-	roots []ASTNode
+	stack []*ASTNode
+	top   *ASTNode
+	root  *ASTNode
+	roots []*ASTNode
 }
 
-func (state *parseState) push(nod ASTNode) (isroot bool) {
+func (state *parseState) push(nod *ASTNode) (isroot bool) {
 	if nod == nil {
 		panic("nil node")
 	}
@@ -54,7 +54,7 @@ func (state *parseState) push(nod ASTNode) (isroot bool) {
 	return isroot
 }
 
-func (state *parseState) pop() (nod ASTNode, isempty bool) {
+func (state *parseState) pop() (nod *ASTNode, isempty bool) {
 	n := len(state.stack)
 	if n == 0 {
 		return nil, true
@@ -140,14 +140,14 @@ func (state *parseState) loop(debug bool) error {
 }
 
 func parseJumpString(state *parseState, item *lexer.Item) error {
-	state.push(&node{typ: TString, raw: item.Value})
+	state.push(&ASTNode{typ: TString, raw: item.Value})
 	state.pop()
 	return nil
 }
 
 var parseJump = map[lexer.ItemType]func(state *parseState, item *lexer.Item) error{
 	lLeftCurly: func(state *parseState, item *lexer.Item) error {
-		state.push(&node{typ: TObject})
+		state.push(&ASTNode{typ: TObject})
 		return nil
 	},
 	lRightCurly: func(state *parseState, item *lexer.Item) error {
@@ -161,7 +161,7 @@ var parseJump = map[lexer.ItemType]func(state *parseState, item *lexer.Item) err
 		return nil
 	},
 	lLeftSquare: func(state *parseState, item *lexer.Item) error {
-		state.push(&node{typ: TArray})
+		state.push(&ASTNode{typ: TArray})
 		return nil
 	},
 	lRightSquare: func(state *parseState, item *lexer.Item) error {
@@ -201,17 +201,17 @@ var parseJump = map[lexer.ItemType]func(state *parseState, item *lexer.Item) err
 	},
 	lString: parseJumpString,
 	lNumber: func(state *parseState, item *lexer.Item) error {
-		state.push(&node{typ: TNumber, raw: item.Value})
+		state.push(&ASTNode{typ: TNumber, raw: item.Value})
 		state.pop()
 		return nil
 	},
 	lBoolean: func(state *parseState, item *lexer.Item) error {
-		state.push(&node{typ: TBoolean, raw: item.Value})
+		state.push(&ASTNode{typ: TBoolean, raw: item.Value})
 		state.pop()
 		return nil
 	},
 	lNull: func(state *parseState, item *lexer.Item) error {
-		state.push(&node{typ: TNull, raw: item.Value})
+		state.push(&ASTNode{typ: TNull, raw: item.Value})
 		state.pop()
 		return nil
 	},
